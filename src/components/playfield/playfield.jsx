@@ -1,53 +1,211 @@
-import React, { useState } from 'react';
+import React from 'react';
+
+import CheckValue from '../../helper/checkValue';
+import GetCard from '../../helper/get-card';
+import CheckVictor from '../../helper/checkVictor';
 
 import './playfield.scss';
 
-const Playfield = () => {
-  let [DealerValue, setDealerValue] = useState(0);
-  let [PlayerValue, setPlayerValue] = useState(0);
-  let [bank, setBank] = useState(0);
-  let [submitted, setSubmitted] = useState(false);
-  let [bid, setBid] = useState(0);
-  let [active, setActive] = useState(false);
-  return (
-    <div className='playfield'>
-      <div className='dealer__value'>{DealerValue}</div>
-      <div className='bidding'>
-        <div className='bidding__bank'>BANK: {bank}</div>
-        <input
-          className={submitted ? 'hidden' : 'bidding__input'}
-          type='number'
-          value={bid}
-        ></input>
-        <div className={submitted ? 'hidden' : 'bidding__submit'}>&#10003;</div>
-      </div>
-      <div className='user-inputs'>
-        <button
-          className={
-            active ? 'btn btn__draw btn__draw-option' : 'btn btn__draw'
-          }
-        >
-          Draw
-        </button>
-        <button className={!active ? 'btn__new btn__new-option' : 'btn__new'}>
-          New Game?
-        </button>
-        <button
-          className={active ? 'btn btn__end btn__end-option' : 'btn btn__end'}
-        >
-          END
-        </button>
-      </div>
-      <div className='deck'>
-        <img
-          className='deck__img'
-          src={require('../../img/deck.jpg')}
-          alt='deck'
-        />
-      </div>
-      <div className='player__value'>{PlayerValue}</div>
-    </div>
-  );
-};
+class Playfield extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      deckID: '',
+      dealerValue: 0,
+      dealerHand: [],
+      playerValue: 0,
+      playerHand: [],
+      bank: 100,
+      bid: 0,
+      currentBid: 0,
+      submitted: false,
+      active: true,
+    };
+  }
+
+  async componentDidMount() {
+    try {
+      const res = await fetch(
+        'https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=14'
+      );
+      const json = await res.json();
+      this.setState({ deckID: json.deck_id });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  onBiddingChange(e) {
+    this.setState({
+      bid: e.target.value,
+    });
+  }
+
+  onBiddingSubmit() {
+    this.setState({
+      currentBid: this.state.bid,
+      bank: this.state.bank - this.state.bid,
+    });
+    this.toggleSubmitted();
+  }
+
+  onNewGame() {
+    this.setState({
+      dealerValue: 0,
+      dealerHand: [],
+      playerValue: 0,
+      playerHand: [],
+      bid: 0,
+      currentBid: 0,
+      active: true,
+      submitted: false,
+    });
+  }
+
+  toggleSubmitted() {
+    this.setState({ submitted: !this.state.submitted });
+  }
+
+  onEndturn() {
+    if (!this.state.submitted) {
+      alert('PLEASE MAKE A VALID BET');
+    } else {
+      this.setState({ active: !this.state.active });
+      this.dealerTurn();
+    }
+  }
+
+  async onDraw() {
+    if (this.state.bid > 0) {
+      try {
+        const response = await GetCard(this.state.deckID);
+        const card = response.data.cards[0];
+        let cardVal = CheckValue(card.value, this.state.playerValue);
+        this.setState({
+          playerHand: [...this.state.playerHand, card.code],
+          playerValue: this.state.playerValue + cardVal,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      alert('MAKE A BET BEFORE PLAYING');
+    }
+  }
+
+  async dealerTurn() {
+    let playerVal = this.state.playerValue;
+    let dealerVal = this.state.dealerValue;
+    if (playerVal >= dealerVal && dealerVal < 22) {
+      let res = await GetCard(this.state.deckID);
+      let cardCode = res.data.cards[0].code;
+      let cardVal = CheckValue(res.data.cards[0].value, this.state.dealerValue);
+
+      this.setState({
+        dealerHand: [...this.state.dealerHand, cardCode],
+        dealerValue: this.state.dealerValue + cardVal,
+      });
+      setTimeout(() => {
+        this.dealerTurn();
+        CheckVictor(this.state.playerValue, this.state.dealerValue);
+      }, 1000);
+    }
+  }
+
+  render() {
+    return (
+      <>
+        <div className='dealer'>
+          {this.state.dealerHand.map((i) => {
+            return (
+              <div key={i + Math.random()} className='card'>
+                <img
+                  src={`https://deckofcardsapi.com/static/img/${i}.png`}
+                  alt={i}
+                  className='card__img'
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className='playfield'>
+          <div className='dealer__value'>{this.state.dealerValue}</div>
+          <div className='bidding'>
+            <div className='bidding__bank'>BANK: {this.state.bank}</div>
+            <input
+              className={this.state.submitted ? 'hidden' : 'bidding__input'}
+              type='number'
+              value={this.state.bid}
+              min='0'
+              max={this.state.bank}
+              onChange={(e) => this.onBiddingChange(e)}
+            />
+            <div
+              onClick={() => this.onBiddingSubmit()}
+              className={this.state.submitted ? 'hidden' : 'bidding__submit'}
+            >
+              &#10003;
+            </div>
+          </div>
+          <div className='user-inputs'>
+            <button
+              className={
+                !this.state.active
+                  ? 'btn btn__draw btn__draw-option'
+                  : 'btn btn__draw'
+              }
+              onClick={() => this.onDraw()}
+            >
+              Draw
+            </button>
+            <button
+              className={
+                this.state.active ? 'btn__new btn__new-option' : 'btn__new'
+              }
+              onClick={() => this.onNewGame()}
+            >
+              New Game?
+            </button>
+            <button
+              className={
+                !this.state.active
+                  ? 'btn btn__end btn__end-option'
+                  : 'btn btn__end'
+              }
+              onClick={() => this.onEndturn()}
+            >
+              END
+            </button>
+          </div>
+          <div
+            className='deck'
+            onClick={() => console.log(this.state.dealerHand)}
+          >
+            <img
+              className='deck__img'
+              src={require('../../img/deck.jpg')}
+              alt='deck'
+            />
+          </div>
+          <div className='player__value'>{this.state.playerValue}</div>
+        </div>
+        <div className='player'>
+          {this.state.playerHand.map((i) => {
+            return (
+              <div key={i + Math.random()} className='card'>
+                <img
+                  src={`https://deckofcardsapi.com/static/img/${i}.png`}
+                  alt={i}
+                  className='card__img'
+                />
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+}
 
 export default Playfield;
