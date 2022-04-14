@@ -38,9 +38,11 @@ class Playfield extends React.Component {
   }
 
   onBiddingChange(e) {
-    this.setState({
-      bid: e.target.value,
-    });
+    if (this.state.bank - e.target.value >= 0 && e.target.value > 0) {
+      this.setState({
+        bid: e.target.value,
+      });
+    }
   }
 
   onBiddingSubmit() {
@@ -52,6 +54,10 @@ class Playfield extends React.Component {
   }
 
   onNewGame() {
+    if (this.state.bank < 1) {
+      alert('Game Over! refresh the page to start anew');
+      window.location.reload();
+    }
     this.setState({
       dealerValue: 0,
       dealerHand: [],
@@ -64,7 +70,15 @@ class Playfield extends React.Component {
     });
   }
 
-  toggleSubmitted() {
+  async toggleSubmitted() {
+    let res = await GetCard(this.state.deckID);
+    let cardCode = res.data.cards[0].code;
+    let cardVal = CheckValue(res.data.cards[0].value, this.state.dealerValue);
+
+    this.setState({
+      dealerHand: [...this.state.dealerHand, cardCode],
+      dealerValue: this.state.dealerValue + cardVal,
+    });
     this.setState({ submitted: !this.state.submitted });
   }
 
@@ -78,7 +92,7 @@ class Playfield extends React.Component {
   }
 
   async onDraw() {
-    if (this.state.bid > 0) {
+    if (this.state.currentBid > 0) {
       try {
         const response = await GetCard(this.state.deckID);
         const card = response.data.cards[0];
@@ -87,7 +101,7 @@ class Playfield extends React.Component {
           playerHand: [...this.state.playerHand, card.code],
           playerValue: this.state.playerValue + cardVal,
         });
-        let check = CheckPlayer(this.state.playerValue);
+        let check = await CheckPlayer(this.state.playerValue);
         if (!check) {
           alert('Player exceeded 21');
           setTimeout(() => {
@@ -105,6 +119,9 @@ class Playfield extends React.Component {
   async dealerTurn() {
     let playerVal = this.state.playerValue;
     let dealerVal = this.state.dealerValue;
+    if (this.state.playerValue > 21) {
+      CheckVictor();
+    }
     if (playerVal >= dealerVal && dealerVal < 22) {
       let res = await GetCard(this.state.deckID);
       let cardCode = res.data.cards[0].code;
