@@ -5,7 +5,8 @@ import './header.scss';
 const logo = require('../../img/logo.png');
 
 class Header extends React.Component {
-  handleClick() {
+  handleClick(e) {
+    e.preventDefault();
     window.location.reload();
   }
   render() {
@@ -15,7 +16,10 @@ class Header extends React.Component {
           <img src={logo} alt='logo' className='logo' />
         </div>
         <div className='header__title'>React BlackJack</div>
-        <div onClick={this.handleClick} className='header__new-game btn'>
+        <div
+          onClick={(e) => this.handleClick(e)}
+          className='header__new-game btn'
+        >
           New Game
         </div>
       </div>

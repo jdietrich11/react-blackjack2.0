@@ -2,6 +2,15 @@
   display: none;
 }
 
+.app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+}
+
 @keyframes phaseIn {
   0% {
     width: 0;
