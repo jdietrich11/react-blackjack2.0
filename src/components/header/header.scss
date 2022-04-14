@@ -24,6 +24,17 @@
     border: 2px solid black;
     padding: 1rem 1rem;
     background-color: aqua;
+
+    &:hover {
+      cursor: pointer;
+      transform: translateY(-1px);
+      box-shadow: 0 0.5rem 0.2rem rgba(0, 0, 0, 0.2);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
   }
 }
 
