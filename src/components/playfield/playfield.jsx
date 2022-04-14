@@ -86,8 +86,12 @@ class Playfield extends React.Component {
     if (!this.state.submitted) {
       alert('PLEASE MAKE A VALID BET');
     } else {
-      this.setState({ active: !this.state.active });
-      this.dealerTurn();
+      if (this.state.playerValue < 22) {
+        this.setState({ active: !this.state.active });
+        this.dealerTurn();
+      } else {
+        this.onNewGame();
+      }
     }
   }
 
@@ -103,10 +107,9 @@ class Playfield extends React.Component {
         });
         let check = await CheckPlayer(this.state.playerValue);
         if (!check) {
-          alert('Player exceeded 21');
           setTimeout(() => {
             this.onNewGame();
-          }, 3000);
+          }, 1000);
         }
       } catch (err) {
         console.error(err);
@@ -213,10 +216,7 @@ class Playfield extends React.Component {
               END
             </button>
           </div>
-          <div
-            className='deck'
-            onClick={() => console.log(this.state.dealerHand)}
-          >
+          <div className='deck'>
             <img
               className='deck__img'
               src={require('../../img/deck.jpg')}
