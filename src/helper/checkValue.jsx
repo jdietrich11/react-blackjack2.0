@@ -1,6 +1,6 @@
 const CheckValue = (card, val) => {
   if (card === 'KING' || card === 'QUEEN' || card === 'JACK') {
-    return 11;
+    return 10;
   }
   if (card === 'ACE') {
     if (val < 13) {

@@ -3,6 +3,7 @@ import React from 'react';
 import CheckValue from '../../helper/checkValue';
 import GetCard from '../../helper/get-card';
 import CheckVictor from '../../helper/checkVictor';
+import CheckPlayer from '../../helper/checkPlayer';
 
 import './playfield.scss';
 
@@ -86,6 +87,13 @@ class Playfield extends React.Component {
           playerHand: [...this.state.playerHand, card.code],
           playerValue: this.state.playerValue + cardVal,
         });
+        let check = CheckPlayer(this.state.playerValue);
+        if (!check) {
+          alert('Player exceeded 21');
+          setTimeout(() => {
+            this.onNewGame();
+          }, 3000);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -107,8 +115,18 @@ class Playfield extends React.Component {
         dealerValue: this.state.dealerValue + cardVal,
       });
       setTimeout(() => {
+        if (this.state.dealerValue > this.state.playerValue) {
+          let winner = CheckVictor(
+            this.state.playerValue,
+            this.state.dealerValue
+          );
+          if (winner === 'player') {
+            this.setState({
+              bank: this.state.bank + this.state.currentBid * 2,
+            });
+          }
+        }
         this.dealerTurn();
-        CheckVictor(this.state.playerValue, this.state.dealerValue);
       }, 1000);
     }
   }
@@ -165,7 +183,7 @@ class Playfield extends React.Component {
               }
               onClick={() => this.onNewGame()}
             >
-              New Game?
+              Next Round?
             </button>
             <button
               className={
